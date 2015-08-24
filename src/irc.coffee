@@ -178,6 +178,7 @@ class IrcBot extends Adapter
       debug: options.debug
       port: options.port
       stripColors: true
+      autoConnect: false
       secure: options.usessl
       selfSigned: options.fakessl
       certExpired: options.certExpired
@@ -191,6 +192,17 @@ class IrcBot extends Adapter
 
     @robot.name = options.nick
     bot = new Irc.Client options.server, options.nick, client_options
+
+    bot.on 'connect', ->
+      bot.conn.setNoDelay yes
+      bot.conn.setTimeout(120000);
+      bot.conn.on 'timeout', ->
+        self.robot.logger.error "Timed out! Lets see what happens"
+        bot.conn.destroy();
+      bot.on 'netError', (e) ->
+        self.robot.logger.error "Got net error #{e}"
+        bot.connect()
+    bot.connect()
 
     next_id = 1
     user_id = {}
